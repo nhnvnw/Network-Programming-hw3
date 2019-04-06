@@ -37,22 +37,29 @@ namespace Client
 
         private void Button2_Click(object sender, EventArgs e)
         {
-            
 
-            //开启服务器连接
-            Thread ServerThread;
-            ServerThread = new Thread(linktoserver);
-            ServerThread.IsBackground = true;
-            ServerThread.Start();
-            
+            button2.Enabled = false;
+            button3.Enabled = true;
+            isLogin = true;
+
             //开启本地连接监听
             Thread Listenthread;
             Listenthread = new Thread(ConnectListen);
             Listenthread.IsBackground = true;
             Listenthread.Start();
 
-            button2.Enabled = false;
-            button3.Enabled = true;
+
+            //开启服务器连接
+            Thread ServerThread;
+            ServerThread = new Thread(linktoserver);
+            ServerThread.IsBackground = true;
+            ServerThread.Start();
+
+
+            //while (isLogin) ;
+            //Listenthread.Interrupt();
+            //myListener.Stop();
+            //MessageBox.Show(myListener.ToString(), "关闭mylistener");
         }
         private void ConnectListen()
         {
@@ -62,15 +69,23 @@ namespace Client
             myListener.Start();//start
             textBox1.AppendText("开启监听连接\r\n" + "开启端口:" + ListenPort + "\r\n");
 
-            while (true)
+            while (isLogin)
             {
                 //监听新客户端连接
-                TcpClient client = myListener.AcceptTcpClient();
-                //对每一个新客户端，创建新线程处理
-                Thread thread = new Thread(new ParameterizedThreadStart(ListenClient));
-                thread.IsBackground = true;
-                thread.Start(client);
+                try {
+                    TcpClient client = myListener.AcceptTcpClient();
+                    //对每一个新客户端，创建新线程处理
+                    Thread thread = new Thread(new ParameterizedThreadStart(ListenClient));
+                    thread.IsBackground = true;
+                    thread.Start(client);
+                }
+                catch (Exception e)
+                {
+                    break;
+                }
+                
             }
+            
         }
         private void ListenClient(object obj)
         {
@@ -85,12 +100,29 @@ namespace Client
             String ip = textBox3.Text.Split(':')[0];
             int port = int.Parse(textBox3.Text.Split(':')[1]);
 
-            Server = new User(new TcpClient(ip, port));
+            try
+            {
+                Server = new User(new TcpClient(ip, port));
+            } catch (Exception e)
+            {
+                Mainclose();
+                MessageBox.Show("服务器未打开");
+                return;
+            }
+
             //连接成功
-            isLogin = true;
+            
             Server.userName = textBox4.Text;
             Server.bw.Write(Server.userName);    //向服务器发送username
             Server.bw.Flush();                  //刷新输出缓存
+
+            if (Server.br.ReadString() == "name conflict")
+            {
+                MessageBox.Show("id已被使用，请更换id");
+                Mainclose();
+                return;
+            }
+
             textBox1.AppendText("与服务器连接成功\r\n");
             listBox1.Items.Add("Server");
 
@@ -109,7 +141,7 @@ namespace Client
                 string IpPort = Server.br.ReadString();
                 UsernameIpPort[username] = IpPort;
                 listBox1.Items.Add(username);
-                textBox1.AppendText("接收 " + username + " 用户ip:port " + IpPort);
+                textBox1.AppendText("接收 " + username + " 用户ip:port " + IpPort + "\r\n");
             }
 
 
@@ -149,33 +181,44 @@ namespace Client
                 catch
                 {
                     //接收失败
+                    MessageBox.Show("与服务器断开连接");
                     break;
                 }
             }
+            
             Mainclose();
-        }
-
-        private void Client_Load(object sender, EventArgs e)
-        {
-            Mainclose();
+            
         }
 
         private void Mainclose()
         {
+            //textBox1.AppendText("1\r\n");
             isLogin = false;
-            //listBox1 = new ListBox();
-            if (Server != null)
+            //关闭myListener
+            myListener.Stop();
+
+            try
             {
                 Server.bw.Write("close");
                 Server.bw.Flush();
                 Server.Close();
-                
+                Server = null;
             }
+            catch (Exception e) { }
+            //textBox1.AppendText("2\r\n");
             if (!button2.Enabled)
             {
                 button2.Enabled = true;
                 button3.Enabled = false;
             }
+            if (myListener != null)
+            {
+                myListener.Stop();
+                //myListener = null;
+            }
+            textBox1.Text = "";
+            listBox1.Items.Clear();
+            //textBox1.AppendText("3\r\n");
         }
         private void Button3_Click(object sender, EventArgs e)
         {
@@ -184,7 +227,17 @@ namespace Client
 
         private void Button1_Click(object sender, EventArgs e)
         {
+            //未登录
+            if (!isLogin)
+            {
+                MessageBox.Show("请登录");
+                return;
+            }
             //得到选择用户名
+            if (listBox1.SelectedItem == null) {
+                MessageBox.Show("请选择接收人");
+                return;
+            }
             string username = listBox1.SelectedItem.ToString();
             
             if (username == "Server")

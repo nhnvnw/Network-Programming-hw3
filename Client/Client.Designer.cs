@@ -180,7 +180,6 @@
             this.Controls.Add(this.label1);
             this.Name = "Client";
             this.Text = "客户端";
-            this.Load += new System.EventHandler(this.Client_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 

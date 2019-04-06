@@ -59,10 +59,25 @@ namespace Server
             TcpClient client = obj as TcpClient;
             //创建新user对象
             User user = new User(client);
-            //添加user进入userlist
-            UserList.Add(user);
+            
             //读取新用户id
             String receive = user.br.ReadString();
+
+            //检测id是否被使用过
+            foreach (var i in UserList)
+                if (i.userName == receive)
+                {
+                    user.bw.Write("name conflict");
+                    user.bw.Flush();
+                    user.Close();
+                    return;
+                }
+            user.bw.Write("ok");
+            user.bw.Flush();
+
+
+            //添加user进入userlist
+            UserList.Add(user);
             user.userName = receive;
             textBox1.AppendText(user.userName + "连接成功\r\n");
             //listBox1添加用户
@@ -144,6 +159,9 @@ namespace Server
 
             //从listbox删除对应用户
             listBox1.Items.Remove(user.userName);
+            //UserList删除
+            UserList.Remove(user);
+            UsernameIpPort.Remove(user.userName);
             //输出
             textBox1.AppendText(user.userName + "退出登录\r\n");
             //断开连接
@@ -152,6 +170,12 @@ namespace Server
 
         private void Button1_Click(object sender, EventArgs e)
         {
+            //得到选择用户名
+            if (listBox1.SelectedItem == null)
+            {
+                MessageBox.Show("请选择接收人");
+                return;
+            }
             string username = listBox1.SelectedItem.ToString();
 
             string ip = UsernameIpPort[username].Split(':')[0];
