@@ -17,21 +17,18 @@ namespace Client
     public partial class Client : Form
     {
 
-        private User Server;
-        //private List<User> UserList;
-        private Dictionary<string, string> UsernameIpPort;
-        private int ListenPort;
+        private User Server;                                    //服务器
+        private Dictionary<string, string> UsernameIpPort;      //key:<id>  value:<ip:port>
+        private int ListenPort;                                 //本地监听连入端口
         
-        private bool isLogin;
-        private TcpListener myListener;
+        private bool isLogin;                                   //是否连入服务器
+        private TcpListener myListener;                         //本地监听"Serversocket"
 
         public Client()
         {
-            
             InitializeComponent();
             //随机产生一个连接端口 [1w,6w)
             ListenPort = 10000 + new Random((int)DateTime.Now.Ticks).Next(50000);
-            //UserList = new List<User>();
             UsernameIpPort = new Dictionary<string, string>();
         }
 
@@ -55,14 +52,16 @@ namespace Client
             ServerThread.IsBackground = true;
             ServerThread.Start();
 
-
-            //while (isLogin) ;
-            //Listenthread.Interrupt();
-            //myListener.Stop();
-            //MessageBox.Show(myListener.ToString(), "关闭mylistener");
         }
         private void ConnectListen()
         {
+            /**
+             * 本地监听，一直循环，
+             * 如果有人连入，开启新线程ListenClient，接收数据退出。
+             * 如果myListener断开，则触发异常，break
+             * 只需要让isLogin和myListener.Stop()同时修改
+             * while循环条件就可以改为true
+             */
             IPAddress ip = IPAddress.Parse("127.0.0.1");//ip
             
             myListener = new TcpListener(ip, ListenPort);//创建TcpListener实例
@@ -89,6 +88,12 @@ namespace Client
         }
         private void ListenClient(object obj)
         {
+            /**
+             * 接收一条消息并退出
+             * 有一点浪费，可以考虑把tcp连接保存下来，
+             * 如果以后发现之前连过，直接通信即可
+             * 一个dictionary即可
+             */
             TcpClient client = obj as TcpClient;
             var br = new BinaryReader(client.GetStream());
             textBox1.AppendText(br.ReadString() + "\r\n");
@@ -96,6 +101,21 @@ namespace Client
         }
         private void linktoserver()
         {
+            /**
+             * 与服务器通信的主连接
+             * 登录需要考虑的事情
+             * 1.服务器是否打开
+             * 2.向服务器发送本人信息
+             *   包括id、ip、port（用于其他人连入）
+             *   判断id是否被使用
+             * 3.接收已登录的用户信息，比如
+             *   包含id、ip、port（用于连入他人）
+             * 4.本地listbox、UsernameIpPort加载
+             * 
+             * 进入循环一直监听服务器消息直到isLogin = false
+             */
+
+
             //通过服务器的ip和端口号，创建TcpClient实例
             String ip = textBox3.Text.Split(':')[0];
             int port = int.Parse(textBox3.Text.Split(':')[1]);
@@ -110,7 +130,6 @@ namespace Client
                 return;
             }
 
-            //连接成功
             
             Server.userName = textBox4.Text;
             Server.bw.Write(Server.userName);    //向服务器发送username
@@ -123,6 +142,7 @@ namespace Client
                 return;
             }
 
+            //连接成功
             textBox1.AppendText("与服务器连接成功\r\n");
             listBox1.Items.Add("Server");
 
@@ -133,6 +153,7 @@ namespace Client
 
             //向服务器接收已登录用户信息
             int number = int.Parse(Server.br.ReadString());
+
             //输出
             textBox1.AppendText("待接收 " + number + " 用户信息\r\n");
             while (number-- > 0)
@@ -149,34 +170,14 @@ namespace Client
             {
                 try
                 {
+                    //接收操作码，跳转到不同方法
                     string ope = Server.br.ReadString();
-                    if (ope.CompareTo("message")==0)
-                    {
-                        textBox1.AppendText(Server.br.ReadString() + "\r\n");
-                    }
+                    if (ope.CompareTo("message") == 0)
+                        newMessage();
                     if (ope.CompareTo("new guy")==0)
-                    {
-                        //上线相关操作
-                        //接收username
-                        string username = Server.br.ReadString();
-                        //添加 消息 和 listbox
-                        textBox1.AppendText(username + "上线\r\n");
-                        listBox1.Items.Add(username);
-                        
-                        //接收新用户ip port
-                        UsernameIpPort[username] = Server.br.ReadString();
-
-                        //输出
-                        textBox1.AppendText("收到" + username + "  ip:port  " +
-                            UsernameIpPort[username] + "\r\n");
-                    }
+                        addGuy();
                     if (ope.CompareTo("del guy")==0)
-                    {
-                        //离线相关操作
-                        string username = Server.br.ReadString();
-                        textBox1.AppendText(username + "离线\r\n");
-                        listBox1.Items.Remove(username);
-                    }
+                        deleteGuy();
                 }
                 catch
                 {
@@ -186,17 +187,67 @@ namespace Client
                 }
             }
             
+            //关闭所有
             Mainclose();
             
+        }
+        private void deleteGuy()
+        {
+            /**
+             * 下线相关操作
+             * 1. 接收username
+             * 2. textbox输出离线消息
+             * 3. listbox删除
+             * 4. UsernameIpPort删除
+             */
+            string username = Server.br.ReadString();
+            textBox1.AppendText(username + "离线\r\n");
+            listBox1.Items.Remove(username);
+            UsernameIpPort.Remove(username);
+        }
+        private void addGuy()
+        {
+            /**
+             * 上线相关操作
+             * 1. 接收username
+             * 2. 添加listbox 
+             * 3. 添加UsernameIpPort(接收新用户ip port)
+             * 4. textbox输出
+             */
+            string username = Server.br.ReadString();
+            textBox1.AppendText(username + "上线\r\n");
+            listBox1.Items.Add(username);
+            UsernameIpPort[username] = Server.br.ReadString();
+            textBox1.AppendText("收到" + username + "  ip:port  " +
+                UsernameIpPort[username] + "\r\n");
+        }
+
+        private void newMessage()
+        {
+            /**
+             * 接收新消息，直接输出
+             */
+            textBox1.AppendText(Server.br.ReadString() + "\r\n");
         }
 
         private void Mainclose()
         {
-            //textBox1.AppendText("1\r\n");
-            isLogin = false;
-            //关闭myListener
-            myListener.Stop();
+            /**
+             * 关闭所有
+             * 1. isLogin = false
+             * 2. myListener关闭
+             * 3. textbox清空
+             * 4. listbox清空
+             * 5. 向Server发送close操作码
+             * 6. 登录、注销按钮切换
+             * 
+             */
 
+            isLogin = false;
+            myListener.Stop();
+            textBox1.Text = "";
+            textBox2.Text = "";
+            listBox1.Items.Clear();
             try
             {
                 Server.bw.Write("close");
@@ -205,20 +256,8 @@ namespace Client
                 Server = null;
             }
             catch (Exception e) { }
-            //textBox1.AppendText("2\r\n");
-            if (!button2.Enabled)
-            {
-                button2.Enabled = true;
-                button3.Enabled = false;
-            }
-            if (myListener != null)
-            {
-                myListener.Stop();
-                //myListener = null;
-            }
-            textBox1.Text = "";
-            listBox1.Items.Clear();
-            //textBox1.AppendText("3\r\n");
+            button2.Enabled = true;
+            button3.Enabled = false;
         }
         private void Button3_Click(object sender, EventArgs e)
         {
@@ -227,6 +266,18 @@ namespace Client
 
         private void Button1_Click(object sender, EventArgs e)
         {
+            /**
+             * 发送消息
+             * 1. 判断是否登录
+             * 2. 判断是否选择用户
+             * 3. 如果是向服务器发送消息
+             *      直接发送
+             * 4. 如果是向客户端发送消息，
+             *      先取出ip、port，再建立tcp连接，最后发送
+             *      记得关闭tcp连接
+             */
+
+
             //未登录
             if (!isLogin)
             {

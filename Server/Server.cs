@@ -30,6 +30,10 @@ namespace Server
 
         private void Button2_Click(object sender, EventArgs e)
         {
+            /**
+             * 启动服务器
+             * 开新线程跑
+             */
             Thread myThread = new Thread(ConnectListen);
             myThread.IsBackground = true;
             myThread.Start();
@@ -38,6 +42,12 @@ namespace Server
 
         private void ConnectListen()
         {
+            /**
+             * 服务器监听主线程
+             * 创建mylistener对象
+             * 不断监听请求
+             * 一旦有请求加入，马上创建新线程处理
+             */
             IPAddress ip = IPAddress.Parse("127.0.0.1");//服务器端ip
             myListener = new TcpListener(ip,int.Parse(textBox3.Text));//创建TcpListener实例
             myListener.Start();//start
@@ -56,6 +66,29 @@ namespace Server
 
         private void ListenClient(object obj)
         {
+            /**
+             * ---------------------todo list----------------------
+             * 将以下分为三个方法，1-8， 10-12扔出去
+             * ----------------------------------------------------
+             * 服务器监听子线程
+             * 处理每一个client的通信
+             * 1. 创建user对象
+             * 2. 得到user id
+             * 3. 判断id是否重复
+             * 4. 将user添加进  UserList  listbox
+             * 5. 获取user ip 和 port
+             * 6. 添加 usernameIpPort
+             * 7. 将新用户ip port 转发给其他已登录用户
+             * 8. 将其他用户的ip port发送给新用户
+             * 
+             * 9. 循环监听操作码
+             * 
+             * 10. 将用户退出消息告知其他用户
+             * 11. UserList listbox usernameIpPort删除
+             * 12. 断开连接
+             */
+
+
             TcpClient client = obj as TcpClient;
             //创建新user对象
             User user = new User(client);
