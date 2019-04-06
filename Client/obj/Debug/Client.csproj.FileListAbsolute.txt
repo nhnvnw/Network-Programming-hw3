@@ -1,0 +1,10 @@
+C:\Users\Dell\OneDrive\大三下\网络编程作业\作业三\WindowsFormsApp1\Client\bin\Debug\Client.exe.config
+C:\Users\Dell\OneDrive\大三下\网络编程作业\作业三\WindowsFormsApp1\Client\bin\Debug\Client.exe
+C:\Users\Dell\OneDrive\大三下\网络编程作业\作业三\WindowsFormsApp1\Client\bin\Debug\Client.pdb
+C:\Users\Dell\OneDrive\大三下\网络编程作业\作业三\WindowsFormsApp1\Client\obj\Debug\Client.Client.resources
+C:\Users\Dell\OneDrive\大三下\网络编程作业\作业三\WindowsFormsApp1\Client\obj\Debug\Client.Properties.Resources.resources
+C:\Users\Dell\OneDrive\大三下\网络编程作业\作业三\WindowsFormsApp1\Client\obj\Debug\Client.csproj.GenerateResource.cache
+C:\Users\Dell\OneDrive\大三下\网络编程作业\作业三\WindowsFormsApp1\Client\obj\Debug\Client.csproj.CoreCompileInputs.cache
+C:\Users\Dell\OneDrive\大三下\网络编程作业\作业三\WindowsFormsApp1\Client\obj\Debug\Client.exe
+C:\Users\Dell\OneDrive\大三下\网络编程作业\作业三\WindowsFormsApp1\Client\obj\Debug\Client.pdb
+C:\Users\Dell\OneDrive\大三下\网络编程作业\作业三\WindowsFormsApp1\Client\obj\Debug\Client.csprojAssemblyReference.cache
