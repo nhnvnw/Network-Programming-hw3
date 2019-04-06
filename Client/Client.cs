@@ -184,19 +184,24 @@ namespace Client
 
         private void Button1_Click(object sender, EventArgs e)
         {
-
+            //得到选择用户名
             string username = listBox1.SelectedItem.ToString();
-
+            
             if (username == "Server")
             {
+                //向Server发送消息
                 Server.bw.Write("message");
                 Server.bw.Write(textBox2.Text);
                 Server.bw.Flush();
             } else
             {
+                //得到ip与port
                 string ip = UsernameIpPort[username].Split(':')[0];
                 int port = int.Parse(UsernameIpPort[username].Split(':')[1]);
+                
+                //新建连接
                 TcpClient client = new TcpClient(ip, port);
+                //输出并关闭连接
                 var bw = new BinaryWriter(client.GetStream());
                 bw.Write(textBox4.Text + " : " + textBox2.Text);
                 bw.Flush();
